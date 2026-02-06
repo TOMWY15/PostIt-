@@ -3,203 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PostIt! - Multi-Device Social</title>
+    <title>PostIt!</title>
     <style>
         :root {
-            /* Default Dark Theme (Purple/Red) */
-            --bg: #0a0a0a;
-            --card-bg: #151515;
-            --accent-purple: #8a2be2;
-            --accent-red: #ff4d4d;
-            --text-main: #ffffff;
-            --text-dim: #a0a0a0;
-            --border: #333;
+            --bg: #050505; --card-bg: #0f0f0f; --accent: #8a2be2; --red: #ff4d4d; --text: #ffffff; --border: #222;
+        }
+        .light-mode {
+            --bg: #f5f5f5; --card-bg: #ffffff; --text: #000000; --border: #ddd;
         }
 
-        .light-theme {
-            --bg: #f0f2f5;
-            --card-bg: #ffffff;
-            --text-main: #1a1a1a;
-            --text-dim: #65676b;
-            --border: #ddd;
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; transition: background 0.3s, color 0.1s; }
+        body { background-color: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* --- AUTH SYSTEM --- */
+        #auth-view { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        .auth-card { background: var(--card-bg); border: 1px solid var(--accent); padding: 40px; border-radius: 30px; width: 400px; text-align: center; }
+        .switch-wrapper { display: flex; background: #000; border-radius: 50px; margin-bottom: 25px; position: relative; cursor: pointer; border: 1px solid var(--border); height: 45px; align-items: center; }
+        .switch-btn { flex: 1; z-index: 2; font-weight: bold; font-size: 14px; color: #666; }
+        .switch-btn.active-text { color: white; }
+        .switch-slider { position: absolute; width: 50%; height: 100%; background: var(--accent); border-radius: 50px; left: 0; transition: 0.4s ease; z-index: 1; }
+        .auth-form input { width: 100%; padding: 14px; background: #000; border: 1px solid var(--border); color: white; border-radius: 12px; margin-bottom: 10px; }
+        #user-field-container { max-height: 0; overflow: hidden; opacity: 0; transition: 0.3s ease; }
+        #user-field-container.visible { max-height: 60px; opacity: 1; margin-bottom: 10px; }
+
+        /* --- MODERN NAVBAR --- */
+        nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: center; padding: 0 20px;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; transition: background 0.3s, color 0.3s; }
-        
-        body { 
-            background-color: #000; /* Outer background */
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh; 
+        .nav-container { width: 100%; max-width: 600px; display: flex; justify-content: space-around; align-items: center; height: 60px; }
+        .nav-item { 
+            color: var(--text); text-decoration: none; font-weight: 600; font-size: 15px; 
+            cursor: pointer; padding: 10px 15px; border-radius: 10px; transition: 0.2s;
         }
+        .nav-item:hover { background: rgba(138, 43, 226, 0.1); color: var(--accent); }
+        .nav-item.active { color: var(--accent); border-bottom: 2px solid var(--accent); border-radius: 0; }
 
-        /* --- DEVICE SIMULATOR CONTROLS --- */
-        #device-controls {
-            background: #222; padding: 10px; width: 100%; display: flex; justify-content: center; gap: 15px;
-            border-bottom: 2px solid var(--accent-purple); z-index: 2000;
+        /* --- CONTENT --- */
+        .view { display: none; max-width: 600px; margin: 0 auto; padding: 20px; animation: fadeIn 0.4s; }
+        .active-view { display: block; }
+
+        /* --- POSTS --- */
+        .feed-filters { display: flex; gap: 10px; margin-bottom: 20px; }
+        .filter-btn { 
+            flex: 1; padding: 10px; background: var(--card-bg); border: 1px solid var(--border); 
+            color: var(--text); border-radius: 10px; cursor: pointer; font-weight: bold;
         }
-        .dev-btn {
-            background: #444; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;
-        }
-        .dev-btn:hover { background: var(--accent-purple); }
+        .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
 
-        /* --- APP WRAPPER (The actual "Device") --- */
-        #app-wrapper {
-            background-color: var(--bg); color: var(--text-main);
-            display: flex; height: 90vh; width: 100%; max-width: 1200px;
-            margin-top: 10px; border-radius: 10px; overflow: hidden;
-            box-shadow: 0 0 50px rgba(138, 43, 226, 0.2);
-        }
+        .post-box { background: var(--card-bg); border: 1px solid var(--border); padding: 20px; border-radius: 15px; margin-bottom: 20px; }
+        .post-item { background: var(--card-bg); border: 1px solid var(--border); padding: 15px; border-radius: 15px; margin-bottom: 15px; position: relative; display: flex; gap: 12px; }
+        .pfp-small { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #333; }
+        .del-btn { position: absolute; top: 10px; right: 10px; color: var(--red); cursor: pointer; font-size: 18px; }
 
-        /* Responsive Widths */
-        .mode-phone { max-width: 375px !important; }
-        .mode-tablet { max-width: 768px !important; }
-        .mode-pc { max-width: 1200px !important; }
+        /* --- SETTINGS --- */
+        .settings-card { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; }
+        .switch { position: relative; width: 40px; height: 20px; display: inline-block; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: #333; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
 
-        /* --- AUTH --- */
-        #auth-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 1000; display: flex; justify-content: center; align-items: center;
-        }
-        .auth-card { background: var(--card-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--accent-purple); width: 80%; text-align: center; }
-
-        /* --- LAYOUT --- */
-        nav { width: 25%; padding: 20px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
-        main { flex: 1; border-right: 1px solid var(--border); overflow-y: auto; }
-        aside { width: 25%; padding: 20px; }
-
-        @media (max-width: 600px) {
-            nav span { display: none; }
-            nav { width: 60px; padding: 10px; }
-            aside { display: none; }
-        }
-
-        /* --- UI ELEMENTS --- */
-        .logo { font-size: 22px; font-weight: bold; color: var(--accent-red); margin-bottom: 20px; }
-        nav button, .post-btn {
-            background: linear-gradient(45deg, var(--accent-purple), var(--accent-red));
-            color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;
-        }
-        .theme-toggle {
-            margin-top: auto; background: var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; cursor: pointer; text-align: center;
-        }
-
-        /* Post Styles */
-        .post-box { padding: 15px; border-bottom: 1px solid var(--border); }
-        textarea { width: 100%; background: transparent; border: none; color: var(--text-main); font-size: 16px; outline: none; resize: none; }
-        .post { padding: 15px; border-bottom: 1px solid var(--border); }
-        .username { font-weight: bold; color: var(--accent-purple); }
-        .del-btn { color: var(--accent-red); float: right; cursor: pointer; font-size: 12px; background: none; border: none; }
-
-        .hidden { display: none !important; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="dark-theme">
+<body>
 
-    <div id="device-controls">
-        <span style="color: #aaa; margin-right: 10px; padding-top: 5px;">View Mode:</span>
-        <button class="dev-btn" onclick="setDevice('phone')">📱 Phone</button>
-        <button class="dev-btn" onclick="setDevice('tablet')">Tablet</button>
-        <button class="dev-btn" onclick="setDevice('pc')">💻 PC</button>
+    <div id="auth-view">
+        <div class="auth-card">
+            <h1 style="color: var(--red); font-style: italic; margin-bottom: 5px;">PostIt!</h1>
+            <div class="switch-wrapper" onclick="toggleAuth()">
+                <div id="slider-auth" class="switch-slider"></div>
+                <div id="btn-login-txt" class="switch-btn active-text">Log In</div>
+                <div id="btn-signup-txt" class="switch-btn">Sign Up</div>
+            </div>
+            <div class="auth-form">
+                <div id="user-field-container"><input type="text" id="reg-user" placeholder="Choose Username"></div>
+                <input type="email" id="reg-email" placeholder="Email Address">
+                <input type="password" placeholder="Password">
+                <button onclick="login()" style="width:100%; background:var(--accent); color:white; border:none; padding:15px; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:10px;">Continue</button>
+            </div>
+        </div>
     </div>
 
-    <div id="app-wrapper" class="mode-pc">
-        
-        <div id="auth-overlay">
-            <div class="auth-card">
-                <h1 style="color: var(--accent-purple)">PostIt!</h1>
-                <p style="margin-bottom: 15px">Sign in to start posting</p>
-                <input type="text" id="user-in" placeholder="Username" style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid var(--border); background:var(--bg); color:var(--text-main);">
-                <button onclick="login()" style="width:100%" class="post-btn">Join Now</button>
+    <div id="main-app" style="display:none;">
+        <nav>
+            <div class="nav-container">
+                <div class="nav-item active" id="nav-home" onclick="switchTab('home')">Home</div>
+                <div class="nav-item" id="nav-profile" onclick="switchTab('profile')">Profile</div>
+                <div class="nav-item" id="nav-settings" onclick="switchTab('settings')">Settings</div>
+            </div>
+        </nav>
+
+        <div id="home-view" class="view active-view">
+            <div class="post-box">
+                <textarea id="post-input" placeholder="What's happening?" rows="3" style="width:100%; background:transparent; border:none; color:var(--text); outline:none; resize:none; font-size: 18px;"></textarea>
+                <button onclick="addPost()" style="float:right; background:var(--accent); color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer; font-weight:bold;">PostIt!</button>
+                <div style="clear:both;"></div>
+            </div>
+
+            <div class="feed-filters">
+                <button class="filter-btn active" id="filter-all" onclick="filterFeed('all')">All Posts</button>
+                <button class="filter-btn" id="filter-mine" onclick="filterFeed('mine')">Your Posts</button>
+            </div>
+
+            <div id="timeline"></div>
+        </div>
+
+        <div id="profile-view" class="view">
+            <div style="height:120px; background:linear-gradient(45deg, var(--accent), var(--red)); border-radius:15px; position:relative; margin-bottom:50px;">
+                <img id="p-img" src="https://via.placeholder.com/100" style="position:absolute; bottom:-40px; left:20px; width:90px; height:90px; border-radius:50%; border:4px solid var(--bg); background:#222; object-fit:cover;">
+            </div>
+            <h2 id="p-name">User</h2>
+            <p id="p-handle" style="color:var(--accent);">@handle</p>
+            <div style="margin-top:20px; padding:15px; background:var(--card-bg); border-radius:10px; border:1px solid var(--border);">
+                <label>Change Bio:</label>
+                <input type="text" id="bio-input" style="width:100%; padding:8px; margin:10px 0; background:#000; color:white; border:1px solid var(--border); border-radius:5px;">
+                <label for="file-pfp" style="color:var(--accent); cursor:pointer; font-size:13px; font-weight:bold;">📁 Upload New Photo</label>
+                <input type="file" id="file-pfp" style="display:none;" onchange="handlePfp(this)">
+                <button onclick="saveProfile()" style="display:block; width:100%; margin-top:10px; background:white; color:black; border:none; padding:8px; border-radius:5px; font-weight:bold; cursor:pointer;">Save Changes</button>
             </div>
         </div>
 
-        <nav>
-            <div class="logo">PostIt!</div>
-            <button onclick="location.reload()">Home</button>
-            <div class="theme-toggle" onclick="toggleTheme()">🌓 Switch Theme</div>
-            <div style="margin-top: 20px; font-size: 12px; color: var(--text-dim);">Logged as: <br><b id="me" style="color: var(--text-main)">-</b></div>
-        </nav>
-
-        <main>
-            <div class="post-box">
-                <textarea id="post-text" placeholder="What's on your mind?" rows="3"></textarea>
-                <button class="post-btn" style="width: 100px; float: right;" onclick="savePost()">PostIt!</button>
-                <div style="clear:both"></div>
+        <div id="settings-view" class="view">
+            <h2>Global Settings</h2>
+            <div class="settings-card" style="margin-top:20px;">
+                <span>Dark Mode</span>
+                <label class="switch"><input type="checkbox" checked onchange="document.body.classList.toggle('light-mode')"><span class="slider"></span></label>
             </div>
-            <div id="feed"></div>
-        </main>
-
-        <aside>
-            <h4 style="margin-bottom: 10px;">Trending</h4>
-            <div style="font-size: 14px; color: var(--text-dim);">
-                <p>#PostItSocial</p>
-                <p>#PurpleVibe</p>
-                <p>#CodingLife</p>
+            <div class="settings-card">
+                <span>Language</span>
+                <select id="lang-select" onchange="changeLang(this.value)" style="background:#000; color:white; border:1px solid var(--border); padding:5px; border-radius:5px;">
+                    <option value="eng">🇺🇸 English</option>
+                    <option value="ita">🇮🇹 Italiano</option>
+                    <option value="esp">🇪🇸 Español</option>
+                    <option value="bra">🇧🇷 Brazil</option>
+                </select>
             </div>
-        </aside>
-
+            <button onclick="location.reload()" style="width:100%; background:var(--red); color:white; border:none; padding:15px; border-radius:10px; font-weight:bold; cursor:pointer; margin-top:20px;">LOGOUT</button>
+        </div>
     </div>
 
     <script>
-        let user = localStorage.getItem('p_user');
-        let posts = JSON.parse(localStorage.getItem('p_posts')) || [];
+        let isSignUp = false;
+        let myData = { user: "User", img: "https://via.placeholder.com/100" };
+        let allPosts = [];
 
-        // Theme Management
-        function toggleTheme() {
-            document.body.classList.toggle('light-theme');
+        function toggleAuth() {
+            isSignUp = !isSignUp;
+            document.getElementById('slider-auth').style.left = isSignUp ? '50%' : '0';
+            document.getElementById('user-field-container').classList.toggle('visible');
+            document.getElementById('btn-login-txt').classList.toggle('active-text');
+            document.getElementById('btn-signup-txt').classList.toggle('active-text');
         }
-
-        // Device Management
-        function setDevice(mode) {
-            const wrapper = document.getElementById('app-wrapper');
-            wrapper.className = ''; // Reset
-            wrapper.classList.add('mode-' + mode);
-        }
-
-        // Auth
-        if(user) hideAuth();
 
         function login() {
-            const val = document.getElementById('user-in').value;
-            if(val.length < 2) return;
-            user = val;
-            localStorage.setItem('p_user', user);
-            hideAuth();
+            const email = document.getElementById('reg-email').value;
+            const user = document.getElementById('reg-user').value;
+            if(!email.includes('@')) return alert("Invalid email");
+            myData.user = isSignUp && user ? user : email.split('@')[0];
+            document.getElementById('p-name').innerText = myData.user;
+            document.getElementById('p-handle').innerText = "@" + myData.user;
+            document.getElementById('auth-view').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
         }
 
-        function hideAuth() {
-            document.getElementById('auth-overlay').classList.add('hidden');
-            document.getElementById('me').innerText = user;
-            render();
+        function addPost() {
+            const val = document.getElementById('post-input').value;
+            if(!val.trim()) return;
+            const post = { id: Date.now(), user: myData.user, img: myData.img, content: val };
+            allPosts.unshift(post);
+            renderPosts();
+            document.getElementById('post-input').value = "";
         }
 
-        // Logic
-        function savePost() {
-            const txt = document.getElementById('post-text').value;
-            if(!txt) return;
-            posts.unshift({ id: Date.now(), author: user, content: txt });
-            localStorage.setItem('p_posts', JSON.stringify(posts));
-            document.getElementById('post-text').value = '';
-            render();
+        function renderPosts(filter = 'all') {
+            const container = document.getElementById('timeline');
+            container.innerHTML = "";
+            const filtered = filter === 'mine' ? allPosts.filter(p => p.user === myData.user) : allPosts;
+            
+            filtered.forEach(p => {
+                container.innerHTML += `
+                    <div class="post-item">
+                        <span class="del-btn" onclick="deletePost(${p.id})">×</span>
+                        <img src="${p.img}" class="pfp-small">
+                        <div><b>@${p.user}</b><p>${p.content}</p></div>
+                    </div>`;
+            });
         }
 
         function deletePost(id) {
-            posts = posts.filter(p => p.id !== id);
-            localStorage.setItem('p_posts', JSON.stringify(posts));
-            render();
+            allPosts = allPosts.filter(p => p.id !== id);
+            renderPosts();
         }
 
-        function render() {
-            const container = document.getElementById('feed');
-            container.innerHTML = '';
-            posts.forEach(p => {
-                container.innerHTML += `
-                    <div class="post">
-                        <button class="del-btn" onclick="deletePost(${p.id})">✖</button>
-                        <div class="username">${p.author}</div>
-                        <div style="margin-top:5px;">${p.content}</div>
-                    </div>
-                `;
-            });
+        function filterFeed(type) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('filter-' + type).classList.add('active');
+            renderPosts(type);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tab + '-view').classList.add('active-view');
+            document.getElementById('nav-' + tab).classList.add('active');
+        }
+
+        function handlePfp(input) {
+            const file = input.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => { 
+                    myData.img = e.target.result;
+                    document.getElementById('p-img').src = myData.img;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveProfile() { alert("Profile saved!"); }
+
+        function changeLang(l) {
+            const titles = { eng: "Settings", ita: "Impostazioni", esp: "Ajustes", bra: "Ajustes" };
+            document.getElementById('nav-home').innerText = l === 'eng' ? "Home" : (l === 'ita' ? "Home" : "Início");
+            document.getElementById('nav-profile').innerText = l === 'eng' ? "Profile" : (l === 'ita' ? "Profilo" : "Perfil");
+            document.getElementById('nav-settings').innerText = l === 'eng' ? "Settings" : (l === 'ita' ? "Impostazioni" : "Ajustes");
         }
     </script>
 </body>
