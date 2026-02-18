@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PostIt!</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #09090f;
+  --surface: #111118;
+  --card: #18181f;
+  --card2: #1f1f28;
+  --border: rgba(255,255,255,0.07);
+  --accent: #ff3869;
+  --accent2: #7c3aed;
+  --accent3: #0ea5e9;
+  --text: #f0eff8;
+  --muted: #6b6a80;
+  --muted2: #9998b0;
+  --green: #22c55e;
+  --yellow: #f59e0b;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===== AUTH ===== */
+#authWrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 800px 600px at 50% 0%, rgba(124,58,237,0.08) 0%, transparent 70%);
+}
+
+.auth-box {
+  width: 420px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  animation: fadeUp 0.5s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+.auth-hero {
+  padding: 36px 36px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(255,56,105,0.08), rgba(124,58,237,0.08));
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ff3869, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 4px;
+}
+
+.auth-tagline { font-size: 13px; color: var(--muted2); }
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-tab {
+  flex: 1; padding: 14px;
+  text-align: center;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.auth-body { padding: 28px 32px 32px; }
+
+.form-panel { display: none; }
+.form-panel.active { display: block; }
+
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 11px; font-weight: 700;
+  color: var(--muted2);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 7px;
+}
+
+.field input, .field textarea, .field select {
+  width: 100%;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus, .field textarea:focus, .field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255,56,105,0.1);
+}
+
+.auth-err {
+  background: rgba(255,56,105,0.1);
+  border: 1px solid rgba(255,56,105,0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 14px;
+  display: none;
+}
+
+.auth-ok {
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--green);
+  margin-bottom: 14px;
+  display: none;
+}
+
+.btn-main {
+  width: 100%;
+  padding: 13px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #be185d, #ff3869);
+  color: white;
+  font-weight: 700;
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s;
+  letter-spacing: 0.3px;
+}
+
+.btn-main:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,56,105,0.35); }
+
+.pw-wrap { position: relative; }
+.pw-eye {
+  position: absolute; right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  color: var(--muted); cursor: pointer; font-size: 16px;
+}
+
+/* ===== APP ===== */
+#appWrap { display: none; min-height: 100vh; }
+
+/* TOPBAR */
+.topbar {
+  position: fixed; top:0; left:0; right:0;
+  height: 58px;
+  background: rgba(9,9,15,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 16px;
+  z-index: 200;
+}
+
+.tb-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 900;
+  background: linear-gradient(135deg, #ff3869, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  flex-shrink: 0;
+}
+
+.tb-search {
+  flex: 1; max-width: 360px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.tb-search input {
+  flex: 1; background: none; border: none;
+  font-size: 14px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; outline: none;
+}
+
+.tb-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+.tb-icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: none; border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--muted2);
+  position: relative;
+  transition: background 0.2s;
+}
+
+.tb-icon-btn:hover { background: var(--card); color: var(--text); }
+
+.tb-notif-badge {
+  position: absolute; top: -1px; right: -1px;
+  background: var(--accent); color: white;
+  font-size: 10px; font-weight: 700;
+  min-width: 16px; height: 16px;
+  border-radius: 8px; padding: 0 3px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg);
+}
+
+.tb-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff3869, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: white;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.tb-avatar:hover { border-color: var(--accent); }
+
+/* LAYOUT */
+.app-layout {
+  display: flex;
+  padding-top: 58px;
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 230px; flex-shrink: 0;
+  position: fixed; top: 58px; left: 0; bottom: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 12px 8px;
+  z-index: 100;
+}
+
+.sidebar::-webkit-scrollbar { display: none; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px; font-weight: 500;
+  color: var(--muted2);
+  transition: all 0.2s;
+  margin-bottom: 2px;
+}
+
+.nav-item:hover { background: var(--card); color: var(--text); }
+.nav-item.active { background: rgba(255,56,105,0.1); color: var(--accent); border: 1px solid rgba(255,56,105,0.15); }
+.nav-icon { font-size: 19px; width: 24px; text-align: center; }
+
+.nav-section-label {
+  font-size: 10px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 12px 14px 6px;
+}
+
+/* MAIN FEED AREA */
+.feed-wrap {
+  margin-left: 230px;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px 24px 60px;
+}
+
+.feed-col { width: 580px; flex-shrink: 0; }
+
+/* CREATE POST */
+.create-post-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.create-post-top {
+  display: flex; gap: 12px; align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.create-post-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff3869, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px; color: white;
+  flex-shrink: 0;
+}
+
+.create-post-input {
+  flex: 1;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 14px; color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  resize: none;
+  outline: none;
+  min-height: 80px;
+  transition: border-color 0.2s;
+}
+
+.create-post-input:focus { border-color: rgba(255,56,105,0.4); }
+
+.create-post-bottom {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.media-btn {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted2);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 5px;
+}
+
+.media-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.post-type-sel {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px; color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  outline: none; cursor: pointer;
+}
+
+.publish-btn {
+  margin-left: auto;
+  padding: 8px 22px;
+  border-radius: 20px;
+  border: none;
+  background: linear-gradient(135deg, #be185d, #ff3869);
+  color: white;
+  font-weight: 700; font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.publish-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,56,105,0.35); }
+
+.url-field {
+  width: 100%;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px; color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  outline: none; margin-top: 10px;
+  display: none;
+  transition: border-color 0.2s;
+}
+
+.url-field:focus { border-color: rgba(255,56,105,0.4); }
+
+/* POSTS */
+.post-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  animation: cardIn 0.3s ease;
+}
+
+@keyframes cardIn {
+  from { opacity:0; transform:translateY(10px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+.post-head {
+  display: flex; align-items: center; gap: 11px;
+  padding: 14px 16px;
+}
+
+.post-av {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff3869, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px; color: white;
+  flex-shrink: 0;
+}
+
+.post-user { font-size: 14px; font-weight: 600; }
+.post-meta { font-size: 12px; color: var(--muted); }
+
+.post-del {
+  margin-left: auto;
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 18px; padding: 4px 8px;
+  border-radius: 8px; transition: all 0.2s;
+}
+
+.post-del:hover { background: rgba(255,56,105,0.1); color: var(--accent); }
+
+.post-text {
+  padding: 0 16px 14px;
+  font-size: 15px; line-height: 1.55;
+}
+
+.post-hashtag { color: #60a5fa; }
+
+/* VIDEO embed */
+.post-video {
+  position: relative;
+  padding-bottom: 56.25%;
+  background: #000;
+}
+
+.post-video iframe {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  border: none;
+}
+
+/* IMAGE */
+.post-img {
+  width: 100%;
+  max-height: 440px;
+  object-fit: cover;
+  display: block;
+}
+
+/* LINK preview */
+.post-link {
+  margin: 0 16px 14px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.post-link:hover { border-color: var(--accent3); }
+.post-link-icon { font-size: 24px; }
+.post-link-url { font-size: 12px; color: var(--muted2); word-break: break-all; }
+
+/* ACTIONS */
+.post-actions {
+  display: flex; align-items: center; gap: 4px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.act-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: none; background: none;
+  color: var(--muted2); font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.act-btn:hover { background: var(--card2); color: var(--text); }
+.act-btn.liked { color: var(--accent); }
+.act-btn .ic { font-size: 19px; }
+
+/* SPONSORED / AD BANNER */
+.ad-card {
+  background: var(--card);
+  border: 1px solid rgba(255,200,0,0.15);
+  border-radius: 20px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.ad-label {
+  font-size: 10px; font-weight: 700;
+  color: var(--yellow);
+  text-transform: uppercase; letter-spacing: 1px;
+  padding: 8px 14px 0;
+  display: flex; align-items: center; gap: 5px;
+}
+
+/* COMMENT SECTION */
+.comments-box {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: none;
+}
+
+.comments-box.open { display: block; }
+
+.comment-input-row {
+  display: flex; gap: 10px; margin-bottom: 12px;
+}
+
+.comment-mini-av {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, #ff3869, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px; color: white;
+  flex-shrink: 0;
+}
+
+.comment-input {
+  flex: 1;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 7px 14px;
+  font-size: 13px; color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+}
+
+.comment-input:focus { border-color: rgba(255,56,105,0.4); }
+
+.comment-send {
+  background: var(--accent); border: none;
+  color: white; border-radius: 20px;
+  padding: 6px 14px; font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; font-weight: 600;
+}
+
+.comment-item {
+  display: flex; gap: 9px; margin-bottom: 10px;
+  animation: cardIn 0.2s ease;
+}
+
+.comment-av {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 11px; color: white;
+  flex-shrink: 0;
+}
+
+.comment-body {
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 8px 12px;
+  flex: 1;
+}
+
+.comment-user { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+.comment-text { font-size: 13px; line-height: 1.4; }
+
+/* RIGHT SIDEBAR */
+.right-col { width: 300px; flex-shrink: 0; }
+
+.widget {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.widget-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px; font-weight: 700;
+  margin-bottom: 14px;
+}
+
+/* NOTIF PANEL */
+.notif-panel {
+  position: fixed;
+  top: 64px; right: 16px;
+  width: 340px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  z-index: 500;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  display: none; overflow: hidden;
+  animation: fadeUp 0.25s ease;
+}
+
+.notif-panel.open { display: block; }
+
+.notif-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.notif-head-title { font-family: 'Syne', sans-serif; font-weight: 700; }
+
+.notif-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.notif-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  animation: cardIn 0.2s ease;
+}
+
+.notif-item:last-child { border-bottom: none; }
+
+.notif-av {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, #ff3869, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: white;
+  flex-shrink: 0;
+}
+
+.notif-text { font-size: 13px; line-height: 1.4; flex: 1; }
+.notif-time { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* PAGES */
+.page { display: none; }
+.page.active { display: block; }
+
+/* PROFILE PAGE */
+.profile-page { padding: 32px; max-width: 700px; margin: 0 auto; }
+
+.profile-cover {
+  height: 180px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #1e0533, #2d0a4e, #1a0a2e);
+  margin-bottom: -50px;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-cover::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,56,105,0.2), rgba(124,58,237,0.2));
+}
+
+.profile-av-wrap {
+  position: relative;
+  width: 90px; height: 90px;
+  margin-left: 24px;
+}
+
+.profile-av-big {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff3869, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 36px; color: white;
+  border: 4px solid var(--bg);
+}
+
+.profile-header-row {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 0 24px 20px;
+  margin-top: 8px;
+}
+
+.profile-name { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; }
+.profile-handle { font-size: 14px; color: var(--muted2); }
+
+.profile-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.profile-card h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px; font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.save-btn {
+  padding: 10px 24px;
+  border-radius: 12px; border: none;
+  background: linear-gradient(135deg, #be185d, #ff3869);
+  color: white; font-weight: 700; font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.save-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,56,105,0.35); }
+
+.danger-btn {
+  padding: 9px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  background: rgba(255,56,105,0.08);
+  color: var(--accent);
+  font-size: 14px; font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.danger-btn:hover { background: rgba(255,56,105,0.15); }
+
+/* SETTINGS PAGE */
+.settings-page { padding: 32px; max-width: 680px; margin: 0 auto; }
+
+.settings-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.settings-card h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px; font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.setting-row {
+  display: flex; align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+
+.setting-row:last-child { border-bottom: none; }
+.setting-info { flex: 1; }
+.setting-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+.setting-desc { font-size: 12px; color: var(--muted2); }
+
+.toggle {
+  width: 44px; height: 24px;
+  background: var(--card2);
+  border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--border);
+  position: relative; transition: background 0.3s;
+  flex-shrink: 0;
+}
+
+.toggle.on { background: var(--accent); border-color: var(--accent); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  border-radius: 50%; background: white;
+  top: 2px; left: 2px;
+  transition: transform 0.3s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.toggle.on::after { transform: translateX(20px); }
+
+/* AI PANEL */
+.ai-panel {
+  position: fixed;
+  right: 0; top: 58px; bottom: 0;
+  width: 360px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 150;
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+
+.ai-panel.open { transform: translateX(0); }
+
+.ai-panel-head {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.ai-panel-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; flex: 1; }
+
+.ai-tab-row {
+  display: flex; gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ai-tab {
+  flex: 1; padding: 7px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted2);
+  font-size: 12px; font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.2s;
+  text-align: center;
+}
+
+.ai-tab.active { background: var(--card); color: var(--text); border-color: var(--accent); }
+
+.ai-key-row {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ai-key-input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; outline: none;
+}
+
+.ai-key-input:focus { border-color: var(--accent); }
+
+.ai-messages {
+  flex: 1; overflow-y: auto;
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.ai-messages::-webkit-scrollbar { width: 4px; }
+.ai-messages::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+
+.ai-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 13px; line-height: 1.5;
+}
+
+.ai-msg.user {
+  background: linear-gradient(135deg, #be185d, #ff3869);
+  color: white;
+  align-self: flex-end;
+  border-radius: 16px 4px 16px 16px;
+}
+
+.ai-msg.bot {
+  background: var(--card);
+  border: 1px solid var(--border);
+  align-self: flex-start;
+  border-radius: 4px 16px 16px 16px;
+}
+
+.ai-msg.bot.thinking {
+  color: var(--muted2);
+  font-style: italic;
+}
+
+.ai-bot-label {
+  font-size: 10px; font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.ai-input-row {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px;
+}
+
+.ai-input {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 9px 14px;
+  font-size: 13px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; outline: none;
+}
+
+.ai-input:focus { border-color: var(--accent); }
+
+.ai-send {
+  width: 36px; height: 36px;
+  border-radius: 50%; border: none;
+  background: linear-gradient(135deg, #be185d, #ff3869);
+  color: white; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: all 0.2s;
+}
+
+.ai-send:hover { transform: scale(1.1); }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  padding: 11px 22px;
+  font-size: 14px; z-index: 9999;
+  transition: transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+  pointer-events: none;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.ok { color: var(--green); border-color: rgba(34,197,94,0.3); }
+.toast.err { color: var(--accent); border-color: rgba(255,56,105,0.3); }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .feed-wrap { margin-left: 0; }
+  .right-col { display: none; }
+  .feed-col { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== AUTH ========== -->
+<div id="authWrap">
+  <div class="auth-box">
+    <div class="auth-hero">
+      <div class="auth-logo">PostIt!</div>
+      <div class="auth-tagline">Condividi la tua vita. Solo contenuti veri.</div>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabAccedi" onclick="authTab('login')">Accedi</div>
+      <div class="auth-tab" id="tabReg" onclick="authTab('register')">Registrati</div>
+    </div>
+    <div class="auth-body">
+
+      <!-- LOGIN -->
+      <div class="form-panel active" id="loginPanel">
+        <div class="auth-err" id="loginErr"></div>
+        <div class="auth-ok" id="loginOk"></div>
+        <div class="field">
+          <label>Username</label>
+          <input id="li_user" type="text" placeholder="il tuo username" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="pw-wrap">
+            <input id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+            <button class="pw-eye" onclick="toggleEye('li_pass',this)">👁</button>
+          </div>
+        </div>
+        <button class="btn-main" onclick="doLogin()">Accedi →</button>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="form-panel" id="regPanel">
+        <div class="auth-err" id="regErr"></div>
+        <div class="auth-ok" id="regOk"></div>
+        <div class="field">
+          <label>Nome completo</label>
+          <input id="re_name" type="text" placeholder="es. Mario Rossi" />
+        </div>
+        <div class="field">
+          <label>Username</label>
+          <input id="re_user" type="text" placeholder="es. mario_rossi" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input id="re_email" type="email" placeholder="mario@esempio.com" />
+        </div>
+        <div class="field">
+          <label>Bio (opzionale)</label>
+          <input id="re_bio" type="text" placeholder="Fotografo, viaggiatore..." />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="pw-wrap">
+            <input id="re_pass" type="password" placeholder="min. 6 caratteri" onkeydown="if(event.key==='Enter')doRegister()" />
+            <button class="pw-eye" onclick="toggleEye('re_pass',this)">👁</button>
+          </div>
+        </div>
+        <button class="btn-main" onclick="doRegister()">Crea account →</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========== APP ========== -->
+<div id="appWrap">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-logo">PostIt!</div>
+    <div class="tb-search">
+      <span style="color:var(--muted)">🔍</span>
+      <input placeholder="Cerca nel feed..." id="searchInput" oninput="searchPosts()" />
+    </div>
+    <div class="tb-right">
+      <button class="tb-icon-btn" onclick="toggleNotif()" title="Notifiche">
+        🔔
+        <span class="tb-notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <button class="tb-icon-btn" onclick="toggleAI()" title="Assistente AI">🤖</button>
+      <div class="tb-avatar" id="topAvatar" onclick="showPage('profile')">M</div>
+    </div>
+  </div>
+
+  <!-- NOTIF PANEL -->
+  <div class="notif-panel" id="notifPanel">
+    <div class="notif-head">
+      <span class="notif-head-title">Notifiche</span>
+      <span style="font-size:12px;color:var(--accent);cursor:pointer" onclick="clearNotifs()">Segna lette</span>
+    </div>
+    <div id="notifList"><div class="notif-empty">🔔 Nessuna notifica</div></div>
+  </div>
+
+  <!-- AI PANEL -->
+  <div class="ai-panel" id="aiPanel">
+    <div class="ai-panel-head">
+      <span style="font-size:20px">🤖</span>
+      <span class="ai-panel-title">Assistente AI</span>
+      <button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px" onclick="toggleAI()">✕</button>
+    </div>
+    <div class="ai-tab-row">
+      <button class="ai-tab active" id="aitab-claude" onclick="setAIModel('claude')">Claude</button>
+      <button class="ai-tab" id="aitab-gemini" onclick="setAIModel('gemini')">Gemini</button>
+      <button class="ai-tab" id="aitab-grok" onclick="setAIModel('grok')">Grok</button>
+    </div>
+    <div class="ai-key-row">
+      <input class="ai-key-input" id="aiKeyInput" type="password" placeholder="Inserisci la tua API key..." />
+    </div>
+    <div class="ai-messages" id="aiMessages">
+      <div class="ai-msg bot">
+        <div class="ai-bot-label" id="aiBotLabel">CLAUDE</div>
+        Ciao! Sono il tuo assistente AI. Inserisci la tua API key sopra e inizia a chattare!
+      </div>
+    </div>
+    <div class="ai-input-row">
+      <input class="ai-input" id="aiInput" placeholder="Scrivi un messaggio..." onkeydown="if(event.key==='Enter')sendAI()" />
+      <button class="ai-send" onclick="sendAI()">➤</button>
+    </div>
+  </div>
+
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="nav-item active" id="nav-feed" onclick="showPage('feed')">
+        <span class="nav-icon">🏠</span> Home
+      </div>
+      <div class="nav-item" id="nav-profile" onclick="showPage('profile')">
+        <span class="nav-icon">👤</span> Profilo
+      </div>
+      <div class="nav-item" id="nav-settings" onclick="showPage('settings')">
+        <span class="nav-icon">⚙️</span> Impostazioni
+      </div>
+      <div class="nav-section-label">Strumenti</div>
+      <div class="nav-item" onclick="toggleAI()">
+        <span class="nav-icon">🤖</span> Assistente AI
+      </div>
+    </div>
+
+    <!-- FEED WRAP -->
+    <div class="feed-wrap">
+
+      <!-- FEED PAGE -->
+      <div id="page-feed" class="page active feed-col">
+
+        <!-- CREATE POST -->
+        <div class="create-post-box">
+          <div class="create-post-top">
+            <div class="create-post-avatar" id="createAvatar">M</div>
+            <textarea class="create-post-input" id="postText" placeholder="Cosa vuoi condividere oggi?"></textarea>
+          </div>
+          <div style="padding: 0 0 8px 54px">
+            <input class="url-field" id="mediaUrlField" placeholder="URL video YouTube o immagine diretta..." />
+          </div>
+          <div class="create-post-bottom">
+            <button class="media-btn" onclick="toggleMediaField('video')">🎬 Video</button>
+            <button class="media-btn" onclick="toggleMediaField('image')">🖼 Immagine</button>
+            <button class="media-btn" onclick="toggleMediaField('link')">🔗 Link</button>
+            <select class="post-type-sel" id="postTypeSel">
+              <option value="text">Testo</option>
+              <option value="video">Video YouTube</option>
+              <option value="image">Immagine URL</option>
+              <option value="link">Link</option>
+            </select>
+            <button class="publish-btn" onclick="publishPost()">Pubblica</button>
+          </div>
+        </div>
+
+        <!-- POSTS CONTAINER -->
+        <div id="postsContainer"></div>
+
+        <div id="emptyFeed" style="text-align:center;padding:60px 20px;color:var(--muted)">
+          <div style="font-size:48px;margin-bottom:12px">📭</div>
+          <div style="font-size:16px;margin-bottom:6px">Nessun post ancora</div>
+          <div style="font-size:13px;opacity:.7">Sii il primo a pubblicare qualcosa!</div>
+        </div>
+
+      </div><!-- /feed -->
+
+      <!-- RIGHT COL -->
+      <div class="right-col" id="rightCol">
+
+        <!-- SPONSORED (YouTube embed fisso - non casuale) -->
+        <div class="ad-card">
+          <div class="ad-label">⚡ Sponsorizzato</div>
+          <div style="padding:8px 14px 6px;font-size:13px;font-weight:600;">Big Buck Bunny — Cortometraggio</div>
+          <div style="position:relative;padding-bottom:56.25%;">
+            <iframe style="position:absolute;inset:0;width:100%;height:100%;border:none;border-radius:0 0 18px 18px"
+              src="https://www.youtube.com/embed/YE7VzlLtp-4?mute=1&autoplay=0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen></iframe>
+          </div>
+        </div>
+
+        <!-- TRENDING TAGS -->
+        <div class="widget">
+          <div class="widget-title">🔥 I tuoi hashtag</div>
+          <div id="trendingTags">
+            <div style="font-size:13px;color:var(--muted)">Gli hashtag dei tuoi post appariranno qui.</div>
+          </div>
+        </div>
+
+        <!-- SECOND AD -->
+        <div class="ad-card">
+          <div class="ad-label">⚡ Sponsorizzato</div>
+          <div style="padding:8px 14px 6px;font-size:13px;font-weight:600;">Blender Open Movie Project</div>
+          <div style="position:relative;padding-bottom:56.25%;">
+            <iframe style="position:absolute;inset:0;width:100%;height:100%;border:none;border-radius:0 0 18px 18px"
+              src="https://www.youtube.com/embed/aqz-KE-bpKQ?mute=1&autoplay=0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen></iframe>
+          </div>
+        </div>
+
+      </div><!-- /right-col -->
+
+      <!-- PROFILE PAGE -->
+      <div id="page-profile" class="page" style="flex:1">
+        <div class="profile-page">
+          <div class="profile-cover"></div>
+          <div style="height:50px;display:flex;align-items:flex-end;padding-left:24px">
+            <div class="profile-av-big" id="profileAvBig">M</div>
+          </div>
+          <div class="profile-header-row">
+            <div>
+              <div class="profile-name" id="profileName">Nome</div>
+              <div class="profile-handle" id="profileHandle">@username</div>
+              <div style="font-size:13px;color:var(--muted2);margin-top:4px" id="profileBio"></div>
+            </div>
+            <div style="display:flex;gap:20px;text-align:center">
+              <div><div style="font-size:20px;font-weight:700" id="profilePostCount">0</div><div style="font-size:12px;color:var(--muted2)">Post</div></div>
+            </div>
+          </div>
+
+          <!-- edit profile -->
+          <div class="profile-card">
+            <h3>✏️ Modifica profilo</h3>
+            <div class="field"><label>Nome completo</label><input id="ep_name" type="text" /></div>
+            <div class="field"><label>Username</label><input id="ep_user" type="text" /></div>
+            <div class="field"><label>Email</label><input id="ep_email" type="email" /></div>
+            <div class="field"><label>Bio</label><input id="ep_bio" type="text" placeholder="Raccontati in poche parole..." /></div>
+            <button class="save-btn" onclick="saveProfile()">💾 Salva profilo</button>
+          </div>
+
+          <!-- change pw -->
+          <div class="profile-card">
+            <h3>🔑 Cambia password</h3>
+            <div class="field"><label>Password attuale</label><input id="cp_old" type="password" /></div>
+            <div class="field"><label>Nuova password</label><input id="cp_new" type="password" /></div>
+            <div class="field"><label>Conferma nuova</label><input id="cp_new2" type="password" /></div>
+            <button class="save-btn" onclick="changePassword()">Cambia password</button>
+          </div>
+
+          <!-- i miei post -->
+          <div class="profile-card">
+            <h3>📋 I miei post</h3>
+            <div id="myPostsList"></div>
+          </div>
+
+          <!-- danger -->
+          <div class="profile-card" style="border-color:rgba(255,56,105,0.2)">
+            <h3 style="color:var(--accent)">⚠️ Zona pericolosa</h3>
+            <button class="danger-btn" onclick="deleteAccount()">🗑️ Elimina account e tutti i post</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS PAGE -->
+      <div id="page-settings" class="page" style="flex:1">
+        <div class="settings-page">
+          <div class="settings-card">
+            <h3>🔔 Notifiche</h3>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Notifiche like</div>
+                <div class="setting-desc">Ricevi notifica quando qualcuno mette like al tuo post</div>
+              </div>
+              <div class="toggle on" id="tog-likes" onclick="toggleSetting('likes',this)"></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Notifiche commenti</div>
+                <div class="setting-desc">Ricevi notifica per i nuovi commenti</div>
+              </div>
+              <div class="toggle on" id="tog-comments" onclick="toggleSetting('comments',this)"></div>
+            </div>
+          </div>
+          <div class="settings-card">
+            <h3>🔒 Privacy</h3>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Profilo pubblico</div>
+                <div class="setting-desc">I tuoi post sono visibili a tutti gli utenti</div>
+              </div>
+              <div class="toggle on" id="tog-public" onclick="toggleSetting('public',this)"></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Mostra email nel profilo</div>
+                <div class="setting-desc">L'email è visibile agli altri utenti</div>
+              </div>
+              <div class="toggle" id="tog-showemail" onclick="toggleSetting('showemail',this)"></div>
+            </div>
+          </div>
+          <div class="settings-card">
+            <h3>🤖 Assistente AI — API Keys</h3>
+            <div style="font-size:13px;color:var(--muted2);margin-bottom:14px;">Le chiavi vengono salvate solo nel tuo browser, mai inviate ai nostri server.</div>
+            <div class="field">
+              <label>Claude (Anthropic) API Key</label>
+              <input id="set_claude_key" type="password" placeholder="sk-ant-..." class="field" style="all:unset;width:100%;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none" />
+            </div>
+            <div class="field">
+              <label>Gemini (Google) API Key</label>
+              <input id="set_gemini_key" type="password" placeholder="AIza..." style="all:unset;width:100%;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none" />
+            </div>
+            <div class="field" style="margin-top:12px">
+              <label>Grok (xAI) API Key</label>
+              <input id="set_grok_key" type="password" placeholder="xai-..." style="all:unset;width:100%;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none" />
+            </div>
+            <button class="save-btn" onclick="saveAPIKeys()" style="margin-top:14px">Salva API Keys</button>
+          </div>
+          <div class="settings-card">
+            <h3>📤 Dati</h3>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Esporta tutti i tuoi post</div>
+                <div class="setting-desc">Scarica i tuoi post in formato JSON</div>
+              </div>
+              <button class="media-btn" onclick="exportPosts()">📦 Esporta</button>
+            </div>
+          </div>
+          <div class="settings-card" style="border-color:rgba(255,56,105,0.2)">
+            <h3 style="color:var(--accent)">⚠️ Zona pericolosa</h3>
+            <button class="danger-btn" onclick="doLogout()">⇤ Disconnetti</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /feed-wrap -->
+  </div><!-- /app-layout -->
+</div><!-- /appWrap -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STORAGE HELPERS
+// ============================================================
+const LS = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+const LSS = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+const LSD = k => localStorage.removeItem(k);
+
+function getUsers() { return LS('pi_users') || {}; }
+function saveUsers(u) { LSS('pi_users', u); }
+function getPosts() { return LS('pi_posts') || []; }
+function savePosts(p) { LSS('pi_posts', p); }
+function getNotifs(u) { return LS('pi_notifs_' + u) || []; }
+function saveNotifs(u, n) { LSS('pi_notifs_' + u, n); }
+function getSettings(u) { return LS('pi_settings_' + u) || { likes:true, comments:true, public:true, showemail:false }; }
+function saveSettings(u, s) { LSS('pi_settings_' + u, s); }
+
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+let currentUser = null;
+let currentPostType = 'text';
+let currentAIModel = 'claude';
+let aiPanelOpen = false;
+let notifPanelOpen = false;
+let appSettings = {};
+
+// ============================================================
+// SHA-256 hash (real)
+// ============================================================
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+function authTab(tab) {
+  ['Accedi','Reg'].forEach(t => {
+    document.getElementById('tab'+t).classList.remove('active');
+  });
+  document.getElementById('loginPanel').classList.remove('active');
+  document.getElementById('regPanel').classList.remove('active');
+  if (tab === 'login') {
+    document.getElementById('tabAccedi').classList.add('active');
+    document.getElementById('loginPanel').classList.add('active');
+  } else {
+    document.getElementById('tabReg').classList.add('active');
+    document.getElementById('regPanel').classList.add('active');
+  }
+}
+
+function toggleEye(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+
+async function doRegister() {
+  const name = document.getElementById('re_name').value.trim();
+  const user = document.getElementById('re_user').value.trim().toLowerCase();
+  const email = document.getElementById('re_email').value.trim();
+  const bio = document.getElementById('re_bio').value.trim();
+  const pass = document.getElementById('re_pass').value;
+  const errEl = document.getElementById('regErr');
+  const okEl = document.getElementById('regOk');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!name || !user || !email || !pass) return showAuthErr(errEl, 'Compila tutti i campi obbligatori.');
+  if (!/^[a-z0-9_]{3,20}$/.test(user)) return showAuthErr(errEl, 'Username: 3-20 caratteri, solo lettere/numeri/underscore.');
+  if (!email.includes('@')) return showAuthErr(errEl, 'Email non valida.');
+  if (pass.length < 6) return showAuthErr(errEl, 'Password minimo 6 caratteri.');
+
+  const users = getUsers();
+  if (users[user]) return showAuthErr(errEl, 'Username già in uso. Scegline un altro.');
+
+  const hash = await sha256(user + ':' + pass);
+  users[user] = { name, username: user, email, bio, hash, createdAt: new Date().toISOString() };
+  saveUsers(users);
+
+  okEl.textContent = '✅ Account creato! Ora puoi accedere.';
+  okEl.style.display = 'block';
+  setTimeout(() => authTab('login'), 1800);
+}
+
+async function doLogin() {
+  const user = document.getElementById('li_user').value.trim().toLowerCase();
+  const pass = document.getElementById('li_pass').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+
+  if (!user || !pass) return showAuthErr(errEl, 'Inserisci username e password.');
+  const users = getUsers();
+  if (!users[user]) return showAuthErr(errEl, 'Username non trovato.');
+
+  const hash = await sha256(user + ':' + pass);
+  if (users[user].hash !== hash) return showAuthErr(errEl, 'Password errata.');
+
+  currentUser = users[user];
+  appSettings = getSettings(user);
+  enterApp();
+}
+
+function showAuthErr(el, msg) {
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+function doLogout() {
+  if (!confirm('Vuoi disconnetterti?')) return;
+  currentUser = null;
+  document.getElementById('appWrap').style.display = 'none';
+  document.getElementById('authWrap').style.display = 'flex';
+  document.getElementById('li_user').value = '';
+  document.getElementById('li_pass').value = '';
+  document.getElementById('loginErr').style.display = 'none';
+}
+
+// ============================================================
+// ENTER APP
+// ============================================================
+function enterApp() {
+  document.getElementById('authWrap').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'block';
+
+  const initial = currentUser.name[0].toUpperCase();
+  document.getElementById('topAvatar').textContent = initial;
+  document.getElementById('createAvatar').textContent = initial;
+
+  // Load settings toggles
+  ['likes','comments','public','showemail'].forEach(k => {
+    const el = document.getElementById('tog-' + k);
+    if (el) el.classList.toggle('on', !!appSettings[k]);
+  });
+
+  // Load saved API keys
+  const savedKeys = LS('pi_apikeys_' + currentUser.username) || {};
+  if (savedKeys.claude) document.getElementById('set_claude_key').value = savedKeys.claude;
+  if (savedKeys.gemini) document.getElementById('set_gemini_key').value = savedKeys.gemini;
+  if (savedKeys.grok) document.getElementById('set_grok_key').value = savedKeys.grok;
+
+  updateProfile();
+  renderFeed();
+  updateNotifBadge();
+  showPage('feed');
+}
+
+// ============================================================
+// PAGES
+// ============================================================
+function showPage(name) {
+  ['feed','profile','settings'].forEach(p => {
+    document.getElementById('page-'+p)?.classList.remove('active');
+    document.getElementById('nav-'+p)?.classList.remove('active');
+  });
+  document.getElementById('page-'+name)?.classList.add('active');
+  document.getElementById('nav-'+name)?.classList.add('active');
+  document.getElementById('rightCol').style.display = name === 'feed' ? '' : 'none';
+
+  if (name === 'profile') {
+    updateProfile();
+    renderMyPosts();
+  }
+}
+
+// ============================================================
+// POST CREATION
+// ============================================================
+function toggleMediaField(type) {
+  const field = document.getElementById('mediaUrlField');
+  const sel = document.getElementById('postTypeSel');
+  const isOpen = field.style.display === 'block' && sel.value === type;
+  field.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    sel.value = type;
+    currentPostType = type;
+    field.placeholder = type === 'video'
+      ? 'URL video YouTube (es. https://www.youtube.com/watch?v=...)'
+      : type === 'image'
+      ? 'URL immagine diretta (es. https://...jpg)'
+      : 'URL link (es. https://...)';
+  }
+}
+
+function extractYTId(url) {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function publishPost() {
+  const text = document.getElementById('postText').value.trim();
+  const mediaUrl = document.getElementById('mediaUrlField').value.trim();
+  const type = document.getElementById('postTypeSel').value;
+
+  if (!text && !mediaUrl) { showToast('⚠️ Scrivi qualcosa prima di pubblicare', 'err'); return; }
+
+  const post = {
+    id: 'p_' + Date.now(),
+    author: currentUser.username,
+    authorName: currentUser.name,
+    text,
+    type,
+    mediaUrl,
+    likes: [],
+    comments: [],
+    createdAt: new Date().toISOString(),
+    ts: Date.now()
+  };
+
+  // Validate YouTube URL if video
+  if (type === 'video' && mediaUrl) {
+    if (!extractYTId(mediaUrl)) {
+      showToast('❌ URL YouTube non valido', 'err'); return;
+    }
+  }
+
+  const posts = getPosts();
+  posts.unshift(post);
+  savePosts(posts);
+
+  document.getElementById('postText').value = '';
+  document.getElementById('mediaUrlField').value = '';
+  document.getElementById('mediaUrlField').style.display = 'none';
+  document.getElementById('postTypeSel').value = 'text';
+
+  renderFeed();
+  updateTrending();
+  showToast('✅ Post pubblicato!', 'ok');
+}
+
+// ============================================================
+// RENDER FEED
+// ============================================================
+function renderFeed(filterText) {
+  let posts = getPosts();
+  if (filterText) {
+    const q = filterText.toLowerCase();
+    posts = posts.filter(p =>
+      p.text?.toLowerCase().includes(q) ||
+      p.authorName?.toLowerCase().includes(q)
+    );
+  }
+
+  const container = document.getElementById('postsContainer');
+  const emptyDiv = document.getElementById('emptyFeed');
+
+  if (posts.length === 0) {
+    container.innerHTML = '';
+    emptyDiv.style.display = 'block';
+    return;
+  }
+  emptyDiv.style.display = 'none';
+
+  container.innerHTML = posts.map(p => renderPostHTML(p)).join('');
+  updateTrending();
+}
+
+function renderPostHTML(post) {
+  const isOwn = post.author === currentUser.username;
+  const likedByMe = post.likes.includes(currentUser.username);
+  const likeCount = post.likes.length;
+  const cmtCount = post.comments.length;
+  const initial = post.authorName[0].toUpperCase();
+  const date = new Date(post.createdAt).toLocaleDateString('it', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  // Format text with hashtags
+  const formattedText = (post.text || '').replace(/#(\w+)/g, '<span class="post-hashtag">#$1</span>');
+
+  // Media
+  let mediaHTML = '';
+  if (post.mediaUrl) {
+    if (post.type === 'video') {
+      const ytId = extractYTId(post.mediaUrl);
+      if (ytId) {
+        mediaHTML = `<div class="post-video"><iframe src="https://www.youtube.com/embed/${ytId}?rel=0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>`;
+      }
+    } else if (post.type === 'image') {
+      mediaHTML = `<img class="post-img" src="${escHtml(post.mediaUrl)}" onerror="this.style.display='none'" alt="immagine" loading="lazy" />`;
+    } else if (post.type === 'link') {
+      mediaHTML = `<a class="post-link" href="${escHtml(post.mediaUrl)}" target="_blank" rel="noopener">
+        <span class="post-link-icon">🔗</span>
+        <span class="post-link-url">${escHtml(post.mediaUrl)}</span>
+      </a>`;
+    }
+  }
+
+  // Comments HTML
+  const commentsHTML = post.comments.map(c => `
+    <div class="comment-item">
+      <div class="comment-av">${c.authorName[0].toUpperCase()}</div>
+      <div class="comment-body">
+        <div class="comment-user">${escHtml(c.authorName)}</div>
+        <div class="comment-text">${escHtml(c.text)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+  <div class="post-card" id="post-${post.id}">
+    <div class="post-head">
+      <div class="post-av">${initial}</div>
+      <div>
+        <div class="post-user">${escHtml(post.authorName)}</div>
+        <div class="post-meta">@${escHtml(post.author)} · ${date}</div>
+      </div>
+      ${isOwn ? `<button class="post-del" onclick="deletePost('${post.id}')" title="Elimina">🗑</button>` : ''}
+    </div>
+    ${post.text ? `<div class="post-text">${formattedText}</div>` : ''}
+    ${mediaHTML}
+    <div class="post-actions">
+      <button class="act-btn ${likedByMe ? 'liked' : ''}" onclick="toggleLike('${post.id}')">
+        <span class="ic">${likedByMe ? '❤️' : '🤍'}</span> ${likeCount}
+      </button>
+      <button class="act-btn" onclick="toggleComments('${post.id}')">
+        <span class="ic">💬</span> ${cmtCount}
+      </button>
+      <button class="act-btn" onclick="sharePost('${post.id}')">
+        <span class="ic">🔗</span> Condividi
+      </button>
+    </div>
+    <div class="comments-box" id="cmts-${post.id}">
+      <div id="cmtlist-${post.id}">${commentsHTML}</div>
+      <div class="comment-input-row">
+        <div class="comment-mini-av">${initial}</div>
+        <input class="comment-input" id="cmtinput-${post.id}" placeholder="Scrivi un commento..." onkeydown="if(event.key==='Enter')addComment('${post.id}')" />
+        <button class="comment-send" onclick="addComment('${post.id}')">Invia</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// INTERACTIONS
+// ============================================================
+function toggleLike(postId) {
+  const posts = getPosts();
+  const idx = posts.findIndex(p => p.id === postId);
+  if (idx === -1) return;
+  const post = posts[idx];
+  const likedIdx = post.likes.indexOf(currentUser.username);
+
+  if (likedIdx === -1) {
+    post.likes.push(currentUser.username);
+    // Notif to post owner if different user and setting on
+    if (post.author !== currentUser.username) {
+      const ownerSettings = getSettings(post.author);
+      if (ownerSettings.likes) {
+        addNotif(post.author, {
+          id: 'n_' + Date.now(),
+          type: 'like',
+          from: currentUser.name,
+          postId,
+          text: `❤️ <b>${escHtml(currentUser.name)}</b> ha messo like al tuo post`,
+          ts: Date.now()
+        });
+      }
+    }
+  } else {
+    post.likes.splice(likedIdx, 1);
+  }
+
+  posts[idx] = post;
+  savePosts(posts);
+  renderFeed();
+}
+
+function toggleComments(postId) {
+  const box = document.getElementById('cmts-' + postId);
+  if (box) {
+    box.classList.toggle('open');
+    if (box.classList.contains('open')) {
+      document.getElementById('cmtinput-' + postId)?.focus();
+    }
+  }
+}
+
+function addComment(postId) {
+  const input = document.getElementById('cmtinput-' + postId);
+  const text = input?.value.trim();
+  if (!text) return;
+
+  const posts = getPosts();
+  const idx = posts.findIndex(p => p.id === postId);
+  if (idx === -1) return;
+
+  const comment = {
+    id: 'c_' + Date.now(),
+    author: currentUser.username,
+    authorName: currentUser.name,
+    text,
+    ts: Date.now()
+  };
+
+  posts[idx].comments.push(comment);
+
+  // Notif
+  if (posts[idx].author !== currentUser.username) {
+    const ownerSettings = getSettings(posts[idx].author);
+    if (ownerSettings.comments) {
+      addNotif(posts[idx].author, {
+        id: 'n_' + Date.now(),
+        type: 'comment',
+        from: currentUser.name,
+        postId,
+        text: `💬 <b>${escHtml(currentUser.name)}</b> ha commentato: "${escHtml(text.slice(0,40))}..."`,
+        ts: Date.now()
+      });
+    }
+  }
+
+  savePosts(posts);
+
+  // Update comment list inline (senza re-render tutto il feed)
+  const cmtList = document.getElementById('cmtlist-' + postId);
+  if (cmtList) {
+    cmtList.innerHTML += `
+      <div class="comment-item">
+        <div class="comment-av">${currentUser.name[0].toUpperCase()}</div>
+        <div class="comment-body">
+          <div class="comment-user">${escHtml(currentUser.name)}</div>
+          <div class="comment-text">${escHtml(text)}</div>
+        </div>
+      </div>`;
+    cmtList.scrollTop = cmtList.scrollHeight;
+  }
+
+  // Update comment count button
+  const actBtn = document.querySelector(`#post-${postId} .act-btn:nth-child(2)`);
+  if (actBtn) actBtn.innerHTML = `<span class="ic">💬</span> ${posts[idx].comments.length}`;
+
+  input.value = '';
+}
+
+function deletePost(postId) {
+  if (!confirm('Eliminare questo post definitivamente?')) return;
+  const posts = getPosts().filter(p => p.id !== postId);
+  savePosts(posts);
+  renderFeed();
+  showToast('🗑️ Post eliminato', 'ok');
+}
+
+function sharePost(postId) {
+  const post = getPosts().find(p => p.id === postId);
+  if (!post) return;
+  const text = `Post di ${post.authorName}: ${post.text?.slice(0,80) || ''}`;
+  if (navigator.share) {
+    navigator.share({ title: 'PostIt!', text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('🔗 Testo copiato!', 'ok'));
+  }
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+function searchPosts() {
+  const q = document.getElementById('searchInput').value.trim();
+  renderFeed(q || null);
+}
+
+// ============================================================
+// TRENDING TAGS (real - extracted from actual posts)
+// ============================================================
+function updateTrending() {
+  const posts = getPosts();
+  const tags = {};
+  posts.forEach(p => {
+    const matches = (p.text || '').match(/#(\w+)/g) || [];
+    matches.forEach(t => { tags[t] = (tags[t] || 0) + 1; });
+  });
+  const sorted = Object.entries(tags).sort((a,b) => b[1]-a[1]).slice(0,8);
+  const el = document.getElementById('trendingTags');
+  if (!sorted.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted)">Usa #hashtag nei tuoi post per vederli qui.</div>';
+    return;
+  }
+  el.innerHTML = sorted.map(([tag, count]) =>
+    `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="document.getElementById('searchInput').value='${tag}';searchPosts()">
+      <span style="font-size:13px;font-weight:600;color:#60a5fa">${tag}</span>
+      <span style="font-size:11px;color:var(--muted)">${count} post</span>
+    </div>`
+  ).join('');
+}
+
+// ============================================================
+// NOTIFICATIONS (real - generated by real actions)
+// ============================================================
+function addNotif(username, notif) {
+  const notifs = getNotifs(username);
+  notifs.unshift(notif);
+  if (notifs.length > 50) notifs.pop();
+  saveNotifs(username, notifs);
+  if (username === currentUser.username) updateNotifBadge();
+}
+
+function updateNotifBadge() {
+  const notifs = getNotifs(currentUser.username);
+  const unread = notifs.filter(n => !n.read).length;
+  const badge = document.getElementById('notifBadge');
+  badge.style.display = unread > 0 ? 'flex' : 'none';
+  badge.textContent = unread > 9 ? '9+' : unread;
+}
+
+function toggleNotif() {
+  notifPanelOpen = !notifPanelOpen;
+  const panel = document.getElementById('notifPanel');
+  panel.classList.toggle('open', notifPanelOpen);
+  if (notifPanelOpen) renderNotifs();
+}
+
+function renderNotifs() {
+  const notifs = getNotifs(currentUser.username);
+  const list = document.getElementById('notifList');
+
+  if (!notifs.length) {
+    list.innerHTML = '<div class="notif-empty">🔔 Nessuna notifica ancora.<br><small style="font-size:12px;color:var(--muted)">Le notifiche appariranno quando qualcuno interagisce con i tuoi post.</small></div>';
+    return;
+  }
+
+  list.innerHTML = notifs.slice(0, 20).map(n => {
+    const date = new Date(n.ts).toLocaleDateString('it', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+    return `<div class="notif-item">
+      <div class="notif-av">${n.from[0].toUpperCase()}</div>
+      <div class="notif-text">
+        <div>${n.text}</div>
+        <div class="notif-time">${date}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Mark all as read
+  const notifs2 = getNotifs(currentUser.username).map(n => ({...n, read:true}));
+  saveNotifs(currentUser.username, notifs2);
+  updateNotifBadge();
+}
+
+function clearNotifs() {
+  saveNotifs(currentUser.username, []);
+  renderNotifs();
+  updateNotifBadge();
+  showToast('✅ Notifiche cancellate', 'ok');
+}
+
+// Close notif when clicking outside
+document.addEventListener('click', e => {
+  const panel = document.getElementById('notifPanel');
+  if (notifPanelOpen && !panel.contains(e.target) && !e.target.closest('.tb-icon-btn')) {
+    notifPanelOpen = false;
+    panel.classList.remove('open');
+  }
+});
+
+// ============================================================
+// PROFILE
+// ============================================================
+function updateProfile() {
+  const u = currentUser;
+  const initial = u.name[0].toUpperCase();
+  document.getElementById('profileAvBig').textContent = initial;
+  document.getElementById('profileName').textContent = u.name;
+  document.getElementById('profileHandle').textContent = '@' + u.username;
+  document.getElementById('profileBio').textContent = u.bio || '';
+  document.getElementById('ep_name').value = u.name;
+  document.getElementById('ep_user').value = u.username;
+  document.getElementById('ep_email').value = u.email;
+  document.getElementById('ep_bio').value = u.bio || '';
+  const myPosts = getPosts().filter(p => p.author === u.username);
+  document.getElementById('profilePostCount').textContent = myPosts.length;
+}
+
+function saveProfile() {
+  const name = document.getElementById('ep_name').value.trim();
+  const email = document.getElementById('ep_email').value.trim();
+  const bio = document.getElementById('ep_bio').value.trim();
+
+  if (!name || !email) { showToast('❌ Nome ed email obbligatori', 'err'); return; }
+
+  const users = getUsers();
+  users[currentUser.username].name = name;
+  users[currentUser.username].email = email;
+  users[currentUser.username].bio = bio;
+  saveUsers(users);
+
+  currentUser.name = name;
+  currentUser.email = email;
+  currentUser.bio = bio;
+
+  const initial = name[0].toUpperCase();
+  document.getElementById('topAvatar').textContent = initial;
+  document.getElementById('createAvatar').textContent = initial;
+
+  updateProfile();
+  showToast('✅ Profilo aggiornato!', 'ok');
+}
+
+async function changePassword() {
+  const old = document.getElementById('cp_old').value;
+  const nw = document.getElementById('cp_new').value;
+  const nw2 = document.getElementById('cp_new2').value;
+
+  if (!old || !nw) { showToast('❌ Compila tutti i campi', 'err'); return; }
+  if (nw.length < 6) { showToast('❌ Password minimo 6 caratteri', 'err'); return; }
+  if (nw !== nw2) { showToast('❌ Le password non corrispondono', 'err'); return; }
+
+  const oldHash = await sha256(currentUser.username + ':' + old);
+  if (oldHash !== currentUser.hash) { showToast('❌ Password attuale errata', 'err'); return; }
+
+  const newHash = await sha256(currentUser.username + ':' + nw);
+  const users = getUsers();
+  users[currentUser.username].hash = newHash;
+  saveUsers(users);
+  currentUser.hash = newHash;
+
+  document.getElementById('cp_old').value = '';
+  document.getElementById('cp_new').value = '';
+  document.getElementById('cp_new2').value = '';
+  showToast('✅ Password cambiata!', 'ok');
+}
+
+function deleteAccount() {
+  if (!confirm('Eliminare account e TUTTI i tuoi post? Azione irreversibile.')) return;
+  if (!confirm('Sei davvero sicuro? Tutti i dati andranno persi.')) return;
+
+  const u = currentUser.username;
+  const users = getUsers();
+  delete users[u];
+  saveUsers(users);
+
+  // Remove user posts
+  const posts = getPosts().filter(p => p.author !== u);
+  savePosts(posts);
+
+  LSD('pi_notifs_' + u);
+  LSD('pi_settings_' + u);
+  LSD('pi_apikeys_' + u);
+
+  doLogout();
+}
+
+function renderMyPosts() {
+  const posts = getPosts().filter(p => p.author === currentUser.username);
+  const el = document.getElementById('myPostsList');
+  if (!posts.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted)">Non hai ancora pubblicato nessun post.</div>';
+    return;
+  }
+  el.innerHTML = posts.map(p => {
+    const date = new Date(p.createdAt).toLocaleDateString('it');
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div>
+        <div style="font-size:13px;font-weight:500">${p.text ? escHtml(p.text.slice(0,60)) + (p.text.length > 60 ? '...' : '') : '[' + p.type + ']'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">${date} · ❤️ ${p.likes.length} · 💬 ${p.comments.length}</div>
+      </div>
+      <button onclick="deletePost('${p.id}'); renderMyPosts(); updateProfile()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:8px;transition:all 0.2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function toggleSetting(key, el) {
+  appSettings[key] = !appSettings[key];
+  el.classList.toggle('on', appSettings[key]);
+  saveSettings(currentUser.username, appSettings);
+  showToast(appSettings[key] ? '✅ Attivato' : '⭕ Disattivato', 'ok');
+}
+
+function saveAPIKeys() {
+  const keys = {
+    claude: document.getElementById('set_claude_key').value,
+    gemini: document.getElementById('set_gemini_key').value,
+    grok: document.getElementById('set_grok_key').value,
+  };
+  LSS('pi_apikeys_' + currentUser.username, keys);
+  showToast('🔑 API Keys salvate!', 'ok');
+}
+
+function exportPosts() {
+  const posts = getPosts().filter(p => p.author === currentUser.username);
+  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), posts }, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `postit_posts_${currentUser.username}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('📦 Post esportati!', 'ok');
+}
+
+// ============================================================
+// AI PANEL — real API calls
+// ============================================================
+function toggleAI() {
+  aiPanelOpen = !aiPanelOpen;
+  document.getElementById('aiPanel').classList.toggle('open', aiPanelOpen);
+}
+
+function setAIModel(model) {
+  currentAIModel = model;
+  ['claude','gemini','grok'].forEach(m => {
+    document.getElementById('aitab-'+m).classList.toggle('active', m === model);
+  });
+  document.getElementById('aiBotLabel').textContent = model.toUpperCase();
+
+  // Pre-fill key from saved
+  const savedKeys = LS('pi_apikeys_' + currentUser.username) || {};
+  document.getElementById('aiKeyInput').value = savedKeys[model] || '';
+  document.getElementById('aiKeyInput').placeholder = model === 'claude'
+    ? 'sk-ant-api...'
+    : model === 'gemini'
+    ? 'AIzaSy...'
+    : 'xai-...';
+}
+
+function appendAIMsg(role, text, label) {
+  const msgs = document.getElementById('aiMessages');
+  const div = document.createElement('div');
+  div.className = 'ai-msg ' + role;
+  if (role === 'bot' && label) {
+    div.innerHTML = `<div class="ai-bot-label">${label}</div>${text}`;
+  } else {
+    div.textContent = text;
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function sendAI() {
+  const input = document.getElementById('aiInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const key = document.getElementById('aiKeyInput').value.trim();
+  if (!key) {
+    showToast('❌ Inserisci la tua API key nel pannello o nelle impostazioni', 'err');
+    return;
+  }
+
+  input.value = '';
+  appendAIMsg('user', msg);
+  const thinking = appendAIMsg('bot', '⏳ Sto pensando...', currentAIModel.toUpperCase());
+  thinking.classList.add('thinking');
+
+  try {
+    let reply = '';
+
+    if (currentAIModel === 'claude') {
+      // Claude API — note: browser CORS may block; works if CORS allowed
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 512,
+          messages: [{ role: 'user', content: msg }]
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.error?.message || 'Errore API Claude ' + res.status);
+      }
+      const data = await res.json();
+      reply = data.content?.[0]?.text || '(risposta vuota)';
+
+    } else if (currentAIModel === 'gemini') {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: msg }] }] })
+        }
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.error?.message || 'Errore API Gemini ' + res.status);
+      }
+      const data = await res.json();
+      reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '(risposta vuota)';
+
+    } else if (currentAIModel === 'grok') {
+      const res = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + key },
+        body: JSON.stringify({
+          model: 'grok-3-mini',
+          messages: [{ role: 'user', content: msg }],
+          max_tokens: 512
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.error?.message || 'Errore API Grok ' + res.status);
+      }
+      const data = await res.json();
+      reply = data.choices?.[0]?.message?.content || '(risposta vuota)';
+    }
+
+    thinking.classList.remove('thinking');
+    thinking.innerHTML = `<div class="ai-bot-label">${currentAIModel.toUpperCase()}</div>${reply.replace(/\n/g,'<br>')}`;
+
+  } catch(e) {
+    thinking.classList.remove('thinking');
+    thinking.innerHTML = `<div class="ai-bot-label" style="color:var(--accent)">ERRORE</div>❌ ${e.message}`;
+  }
+
+  document.getElementById('aiMessages').scrollTop = 9999;
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = 'toast'; }, 2800);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', () => {
+  const users = getUsers();
+  if (Object.keys(users).length === 0) authTab('register');
+});
+</script>
+</body>
+</html>
